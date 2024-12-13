@@ -187,8 +187,12 @@ extension ExtWidgetTesterPump on WidgetTester {
             : '$error';
         debugPrint('runAsyncEnhanced see error:\n$errorMessage');
       }
-
-      convenientTestRunAsyncEnhancedExceptionChecker(error);
+      final asFlutterErrorDetails = error is FlutterErrorDetails ? error : null;
+      if (asFlutterErrorDetails != null) {
+        FlutterError.reportError(asFlutterErrorDetails);
+      } else {
+        convenientTestRunAsyncEnhancedExceptionChecker(error);
+      }
 
       return result as T;
     }
