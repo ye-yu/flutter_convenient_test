@@ -176,7 +176,7 @@ extension ExtWidgetTesterPump on WidgetTester {
           'runAsyncEnhanced skip executing real runAsync since already has pending tasks');
       return callback();
     } else {
-      late final StackTrace? stack;
+      StackTrace? stack;
       final result = await runAsync(() async {
         try {
           await callback();
