@@ -176,23 +176,31 @@ extension ExtWidgetTesterPump on WidgetTester {
           'runAsyncEnhanced skip executing real runAsync since already has pending tasks');
       return callback();
     } else {
-      final result = await runAsync(callback);
+      late final StackTrace? stack;
+      final result = await runAsync(() async {
+        try {
+          await callback();
+        } catch (error, stacktrace) {
+          stack = stacktrace;
+          rethrow;
+        }
+      });
 
       // runAsync will eat error https://github.com/fzyzcjy/yplusplus/issues/8054#issuecomment-1503370451
-      final Object? error = binding.safeTakeExceptionOrDetails();
+      final Object? maybeError = binding.safeTakeExceptionOrDetails();
+      final error = maybeError is FlutterErrorDetails
+          ? maybeError
+          : maybeError != null
+              ? FlutterErrorDetails(exception: maybeError, stack: stack)
+              : null;
+
       if (error != null) {
         // https://github.com/fzyzcjy/yplusplus/issues/9072#issuecomment-1559562515
-        final errorMessage = error is FlutterErrorDetails
-            ? 'e=${error.exception} s=${error.stack}'
-            : '$error';
+        final errorMessage = 'e=${error.exception} s=${error.stack}';
         debugPrint('runAsyncEnhanced see error:\n$errorMessage');
+        FlutterError.reportError(error);
       }
-      final asFlutterErrorDetails = error is FlutterErrorDetails ? error : null;
-      if (asFlutterErrorDetails != null) {
-        FlutterError.reportError(asFlutterErrorDetails);
-      } else {
-        convenientTestRunAsyncEnhancedExceptionChecker(error);
-      }
+      // convenientTestRunAsyncEnhancedExceptionChecker(error);
 
       return result as T;
     }
